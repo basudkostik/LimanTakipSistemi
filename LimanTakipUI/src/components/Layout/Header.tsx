@@ -21,9 +21,9 @@ const Header: React.FC = () => {
         <div className="flex justify-between items-center h-16">
           {/* Logo and Brand */}
           <div className="flex items-center">
-            <div className="flex-shrink-0">
+            <div className="flex-shrink-5">
               <div className="flex items-center">
-                <Ship className="h-8 w-8 text-primary-600" />
+                <Ship className="h-8 w-8 text-primary-500" />
                 <span className="ml-0 text-xl font-bold text-gray-900">Liman Takip Sistemi</span>
               </div>
             </div>

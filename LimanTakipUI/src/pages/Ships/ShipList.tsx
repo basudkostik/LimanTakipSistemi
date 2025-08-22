@@ -40,7 +40,9 @@ const ShipList: React.FC = () => {
       await shipAPI.create(data);
       setShowForm(false);
       loadShips();
+      console.log("🚀 Creating ship with data:", data);
     } catch (error) {
+      console.log("🚀 Creating ship with data:", data);
       console.error('Error creating ship:', error);
     }
   };
@@ -268,7 +270,16 @@ const ShipList: React.FC = () => {
       {(showForm || editingShip) && (
         <ShipForm
           ship={editingShip}
-          onSubmit={editingShip ? handleUpdate : handleCreate}
+          onSubmit={(data) => {
+                if (editingShip)
+                    {
+                        handleUpdate(editingShip.shipId, data); // ✅ pass the ID manually
+                    }
+                     else
+                       {
+      handleCreate(data); // ✅ no ID for new ship
+    }
+  }}
           onCancel={() => {
             setShowForm(false);
             setEditingShip(null);

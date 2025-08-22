@@ -1,46 +1,45 @@
-﻿using Asp.Versioning;
+using Asp.Versioning;
 using AutoMapper;
 using LimanTakipSistemi.API.Data;
 using LimanTakipSistemi.API.Models.Domain;
 using LimanTakipSistemi.API.Models.DTOs.CrewMember;
+using LimanTakipSistemi.API.Repositories.CrewMemberRepository;
 using Microsoft.AspNetCore.Mvc;
 
-namespace LimanTakipSistemi.API.Controllers.V1
+
+namespace LimanTakipSistemi.API.Controllers.V2
 {
-    [ApiController]
-    [ApiVersion("1.0")]
     [Route("api/v{version:apiVersion}/[controller]")]
+    [ApiVersion("2.0")]
+    [ApiController]
     public class CrewMemberController : ControllerBase
     {
-        private readonly LimanTakipDbContext dbContext;
         private readonly IMapper mapper;
+        private readonly ICrewMemberRepository crewMemberRepository;
 
-        public CrewMemberController(LimanTakipDbContext dbContext, IMapper mapper)
+        public CrewMemberController(ICrewMemberRepository crewMemberRepository, IMapper mapper)
         {
-            this.dbContext = dbContext;
+            this.crewMemberRepository = crewMemberRepository;
             this.mapper = mapper;
         }
 
         [HttpGet]
-        public IActionResult GetAll()
+        public async Task<IActionResult> GetAll([FromQuery] int? crewId, [FromQuery] string? firstName, [FromQuery] string? lastName,
+        [FromQuery] string? email, [FromQuery] string? phoneNumber, [FromQuery] string? role,
+        [FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 100)
         {
 
-            var crewMembers = dbContext.CrewMembers.ToList();
-
-            var crewMemberDto = new List<CrewMemberDto>();
-
-            crewMemberDto = mapper.Map<List<CrewMemberDto>>(crewMembers);
-
-
+            var crewMembers = await crewMemberRepository.GetAllAsync(crewId, firstName, lastName, email, phoneNumber, role, pageNumber = 1, pageSize = 100);
+            var crewMemberDto = mapper.Map<List<CrewMemberDto>>(crewMembers);
             return Ok(crewMemberDto);
         }
 
 
         [HttpGet]
         [Route("{id:int}")]
-        public IActionResult GetById([FromRoute] int id)
+        public async Task<IActionResult> GetById([FromRoute] int id)
         {
-            var crewMember = dbContext.CrewMembers.FirstOrDefault(x => x.CrewId == id);
+            var crewMember = await crewMemberRepository.GetByIdAsync(id);
 
             if (crewMember == null)
             {
@@ -55,12 +54,11 @@ namespace LimanTakipSistemi.API.Controllers.V1
         }
 
         [HttpPost]
-        public IActionResult Create([FromBody] AddCrewMemberRequestDto addCrewMemberRequestDto)
+        public async Task<IActionResult> Create([FromBody] AddCrewMemberRequestDto addCrewMemberRequestDto)
         {
             var crewMember = mapper.Map<CrewMember>(addCrewMemberRequestDto);
 
-            dbContext.CrewMembers.Add(crewMember);
-            dbContext.SaveChanges();
+            crewMember = await crewMemberRepository.CreateAsync(crewMember);
 
             var crewMemberDto = mapper.Map<CrewMemberDto>(crewMember);
 
@@ -70,9 +68,11 @@ namespace LimanTakipSistemi.API.Controllers.V1
 
         [HttpPut]
         [Route("{id:int}")]
-        public IActionResult Update([FromRoute] int id, [FromBody] UpdateCrewMemberRequestDto updateCrewMemberRequestDto)
+        public async Task<IActionResult> Update([FromRoute] int id, [FromBody] UpdateCrewMemberRequestDto updateCrewMemberRequestDto)
         {
-            var crewMember = dbContext.CrewMembers.FirstOrDefault(x => x.CrewId == id);
+
+            var crewMember = mapper.Map<CrewMember>(updateCrewMemberRequestDto);
+            crewMember = await crewMemberRepository.UpdateAsync(id, crewMember);
 
             if (crewMember == null)
             {
@@ -80,13 +80,6 @@ namespace LimanTakipSistemi.API.Controllers.V1
             }
             else
             {
-                crewMember.PhoneNumber = updateCrewMemberRequestDto.PhoneNumber;
-                crewMember.FirstName = updateCrewMemberRequestDto.FirstName;
-                crewMember.LastName = updateCrewMemberRequestDto.LastName;
-                crewMember.Email = updateCrewMemberRequestDto.Email;
-                crewMember.Role = updateCrewMemberRequestDto.Role;
-
-                dbContext.SaveChanges();
 
                 var crewMemberDto = mapper.Map<CrewMemberDto>(crewMember);
 
@@ -97,9 +90,9 @@ namespace LimanTakipSistemi.API.Controllers.V1
 
         [HttpDelete]
         [Route("{id:int}")]
-        public IActionResult Delete([FromRoute] int id)
+        public async Task<IActionResult> Delete([FromRoute] int id)
         {
-            var crewMember = dbContext.CrewMembers.FirstOrDefault(x => x.CrewId == id);
+            var crewMember = await crewMemberRepository.DeleteAsync(id);
 
             if (crewMember == null)
             {
@@ -107,11 +100,7 @@ namespace LimanTakipSistemi.API.Controllers.V1
             }
             else
             {
-                dbContext.CrewMembers.Remove(crewMember);
-                dbContext.SaveChanges();
-
                 var crewMemberDto = mapper.Map<CrewMemberDto>(crewMember);
-
                 return Ok(crewMemberDto);
             }
 

@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 // API base configuration
-const API_BASE_URL = 'http://localhost:5190/api/v1';
+const API_BASE_URL = 'http://localhost:5190/api/v2';
 
 const api = axios.create({
   baseURL: API_BASE_URL,
@@ -30,7 +30,7 @@ export const shipAPI = {
 
 // Port Management API
 export const portAPI = {
-  getAll: () => api.get('/Port'),
+  getAll: (params?: any) => api.get('/Port', { params }),
   getById: (id: number) => api.get(`/Port/${id}`),
   create: (data: any) => api.post('/Port', data),
   update: (id: number, data: any) => api.put(`/Port/${id}`, data),

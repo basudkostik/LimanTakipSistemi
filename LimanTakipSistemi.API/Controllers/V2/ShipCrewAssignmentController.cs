@@ -1,39 +1,44 @@
-﻿using AutoMapper;
+using AutoMapper;
 using LimanTakipSistemi.API.Data;
 using LimanTakipSistemi.API.Models.Domain;
 using LimanTakipSistemi.API.Models.DTOs.ShipCrewAssignment;
 using Microsoft.AspNetCore.Mvc;
 using Asp.Versioning;
+using LimanTakipSistemi.API.Repositories.ShipCrewAssignmentRepository;
 
-namespace LimanTakipSistemi.API.Controllers.V1
+
+
+namespace LimanTakipSistemi.API.Controllers.V2
 {
     [ApiController]
-    [ApiVersion("1.0")]
+    [ApiVersion("2.0")]
     [Route("api/v{version:apiVersion}/[controller]")]
     public class ShipCrewAssignmentController : ControllerBase
     {
-        private readonly LimanTakipDbContext dbContext;
+        private readonly IShipCrewAssignmentRepository assignmentRepository;
         private readonly IMapper mapper;
 
-        public ShipCrewAssignmentController(LimanTakipDbContext dbContext, IMapper mapper)
+        public ShipCrewAssignmentController(IShipCrewAssignmentRepository assignmentRepository, IMapper mapper)
         {
-            this.dbContext = dbContext;
+            this.assignmentRepository = assignmentRepository;
             this.mapper = mapper;
         }
 
         [HttpGet]
-        public IActionResult GetAll(   )
+        public async Task<IActionResult> GetAll([FromQuery] int? assignmentId, [FromQuery] int? shipId,
+        [FromQuery] int? crewId, [FromQuery] DateTime? assignmentDate,
+        [FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 100)
         {
-            var assignments = dbContext.ShipCrewAssignments.ToList();
+            var assignments = await assignmentRepository.GetAllAsync(assignmentId, shipId, crewId, assignmentDate, pageNumber = 1, pageSize = 100);
             var assignmentsDto = mapper.Map<List<ShipCrewAssignmentDto>>(assignments);
             return Ok(assignmentsDto);
         }
 
         [HttpGet]
         [Route("{id:int}")]
-        public IActionResult GetById([FromRoute] int id)
+        public async Task<IActionResult> GetById([FromRoute] int id)
         {
-            var assignment = dbContext.ShipCrewAssignments.FirstOrDefault(a => a.AssignmentId == id);
+            var assignment = await assignmentRepository.GetByIdAsync(id);
             if (assignment == null)
             {
                 return NotFound();
@@ -43,38 +48,36 @@ namespace LimanTakipSistemi.API.Controllers.V1
         }
 
         [HttpPost]
-        public IActionResult Create([FromBody] AddShipCrewAssignmentRequestDto addShipCrewAssignmentRequestDto)
+        public async Task<IActionResult> Create([FromBody] AddShipCrewAssignmentRequestDto addShipCrewAssignmentRequestDto)
         {
             if (addShipCrewAssignmentRequestDto == null)
             {
                 return BadRequest("Assignment data is required.");
             }
             var assignment = mapper.Map<ShipCrewAssignment>(addShipCrewAssignmentRequestDto);
-            dbContext.ShipCrewAssignments.Add(assignment);
-            dbContext.SaveChanges();
+            assignment = await assignmentRepository.CreateAsync(assignment);
             var assignmentDto = mapper.Map<ShipCrewAssignmentDto>(assignment);
             return CreatedAtAction(nameof(GetById), new { id = assignment.AssignmentId }, assignmentDto);
         }
 
         [HttpPut]
         [Route("{id:int}")]
-        public IActionResult Update([FromRoute] int id, [FromBody] UpdateShipCrewAssignmentRequestDto updateShipCrewAssignmentRequestDto)
+        public async Task<IActionResult> Update([FromRoute] int id, [FromBody] UpdateShipCrewAssignmentRequestDto updateShipCrewAssignmentRequestDto)
         {
             if (updateShipCrewAssignmentRequestDto == null)
             {
                 return BadRequest("Assignment data is required.");
             }
-            var assignment = dbContext.ShipCrewAssignments.FirstOrDefault(a => a.AssignmentId == id);
+
+
+            var assignment = mapper.Map<ShipCrewAssignment>(updateShipCrewAssignmentRequestDto);
+            assignment = await assignmentRepository.UpdateAsync(id, assignment);
             if (assignment == null)
             {
                 return NotFound();
             }
             else
             {
-                assignment.ShipId = updateShipCrewAssignmentRequestDto.ShipId;
-                assignment.CrewId = updateShipCrewAssignmentRequestDto.CrewId;
-                assignment.AssignmentDate = updateShipCrewAssignmentRequestDto.AssignmentDate;
-                dbContext.SaveChanges();
                 var assignmentDto = mapper.Map<ShipCrewAssignmentDto>(assignment);
                 return Ok(assignmentDto);
             }
@@ -83,17 +86,15 @@ namespace LimanTakipSistemi.API.Controllers.V1
 
         [HttpDelete]
         [Route("{id:int}")]
-        public IActionResult Delete([FromRoute] int id)
+        public async Task<IActionResult> Delete([FromRoute] int id)
         {
-            var assignment = dbContext.ShipCrewAssignments.FirstOrDefault(a => a.AssignmentId == id);
+            var assignment = await assignmentRepository.DeleteAsync(id);
             if (assignment == null)
             {
                 return NotFound();
             }
             else
             {
-                dbContext.ShipCrewAssignments.Remove(assignment);
-                dbContext.SaveChanges();
                 var assignmentDto = mapper.Map<ShipCrewAssignmentDto>(assignment);
                 return Ok(assignmentDto);
             }

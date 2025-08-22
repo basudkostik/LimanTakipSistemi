@@ -1,41 +1,47 @@
-﻿
+
+using System.Threading.Tasks;
 using Asp.Versioning;
 using AutoMapper;
 using LimanTakipSistemi.API.Data;
 using LimanTakipSistemi.API.Models.Domain;
 using LimanTakipSistemi.API.Models.DTOs.ShipVisit;
+using LimanTakipSistemi.API.Repositories.ShipVisitRepository;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
-namespace LimanTakipSistemi.API.Controllers.V1
+namespace LimanTakipSistemi.API.Controllers.V2
 {
-    [ApiVersion("1.0")]
+    [ApiVersion("2.0")]
     [Route("api/v{version:apiVersion}/[controller]")]
     [ApiController]
     public class ShipVisitController : ControllerBase
     {
-        private readonly LimanTakipDbContext dbContext;
+        private readonly IShipVisitRepository visitRepository;
+
         private readonly IMapper mapper;
 
-        public ShipVisitController(LimanTakipDbContext dbContext, IMapper mapper)
+        public ShipVisitController(IShipVisitRepository visitRepository, IMapper mapper)
         {
-            this.dbContext = dbContext;
+            this.visitRepository = visitRepository;
             this.mapper = mapper;
         }
 
 
         [HttpGet]
-        public IActionResult GetAll()
+        public async Task<IActionResult> GetAll([FromQuery] int? visitId, [FromQuery] int? shipId,
+        [FromQuery] int? portId, [FromQuery] DateTime? arrivalDate, [FromQuery] DateTime? departureDate,
+        [FromQuery] string? purpose,
+        [FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 100)
         {
-            var shipVisits = dbContext.ShipVisits.ToList();
+            var shipVisits = await visitRepository.GetAllAsync(visitId, shipId, portId, arrivalDate, departureDate, purpose, pageNumber = 1, pageSize = 100);
             var shipVisitDtos = mapper.Map<List<ShipVisitDto>>(shipVisits);
             return Ok(shipVisitDtos);
         }
 
         [HttpGet("{id:int}")]
-        public IActionResult GetById([FromRoute] int id)
+        public async Task<IActionResult> GetById([FromRoute] int id)
         {
-            var shipVisit = dbContext.ShipVisits.FirstOrDefault(sv => sv.VisitId == id);
+            var shipVisit = await visitRepository.GetByIdAsync(id);
             if (shipVisit == null)
             {
                 return NotFound($"Ship visit with ID {id} not found.");
@@ -44,40 +50,37 @@ namespace LimanTakipSistemi.API.Controllers.V1
             return Ok(shipVisitDto);
         }
         [HttpPost]
-        public IActionResult Create([FromBody] AddShipVisitRequestDto addShipVisitRequestDto)
+        public async Task<IActionResult> Create([FromBody] AddShipVisitRequestDto addShipVisitRequestDto)
         {
             if (addShipVisitRequestDto == null)
             {
                 return BadRequest("Ship visit data is required.");
             }
             var shipVisit = mapper.Map<ShipVisit>(addShipVisitRequestDto);
-            dbContext.ShipVisits.Add(shipVisit);
-            dbContext.SaveChanges();
+            shipVisit = await visitRepository.CreateAsync(shipVisit);
             var shipVisitDto = mapper.Map<ShipVisitDto>(shipVisit);
             return CreatedAtAction(nameof(GetById), new { id = shipVisit.VisitId }, shipVisitDto);
         }
+
+
         [HttpPut]
         [Route("{id:int}")]
-        public IActionResult Update([FromRoute] int id, [FromBody] AddShipVisitRequestDto updateShipVisitRequestDto)
+        public async Task<IActionResult> Update([FromRoute] int id, [FromBody] AddShipVisitRequestDto updateShipVisitRequestDto)
         {
             if (updateShipVisitRequestDto == null)
             {
                 return BadRequest("Ship visit data is required.");
             }
-            var shipVisit = dbContext.ShipVisits.FirstOrDefault(sv => sv.VisitId == id);
+
+            var shipVisit = mapper.Map<ShipVisit>(updateShipVisitRequestDto);
+            shipVisit = await visitRepository.UpdateAsync(id, shipVisit);
+
             if (shipVisit == null)
             {
                 return NotFound($"Ship visit with ID {id} not found.");
             }
             else
             {
-                shipVisit.ShipId = updateShipVisitRequestDto.ShipId;
-                shipVisit.PortId = updateShipVisitRequestDto.PortId;
-                shipVisit.ArrivalDate = updateShipVisitRequestDto.ArrivalDate;
-                shipVisit.DepartureDate = updateShipVisitRequestDto.DepartureDate;
-                shipVisit.Purpose = updateShipVisitRequestDto.Purpose;
-
-                dbContext.SaveChanges();
                 var shipVisitDto = mapper.Map<ShipVisitDto>(shipVisit);
                 return Ok(shipVisitDto);
             }
@@ -85,18 +88,15 @@ namespace LimanTakipSistemi.API.Controllers.V1
 
         [HttpDelete]
         [Route("{id:int}")]
-        public IActionResult Delete([FromRoute] int id)
+        public async Task<IActionResult> Delete([FromRoute] int id)
         {
-            var shipVisit = dbContext.ShipVisits.FirstOrDefault(sv => sv.VisitId == id);
+            var shipVisit = await visitRepository.DeleteAsync(id);
             if (shipVisit == null)
             {
                 return NotFound($"Ship visit with ID {id} not found.");
             }
             else
             {
-                dbContext.ShipVisits.Remove(shipVisit);
-                dbContext.SaveChanges();
-
                 var shipVisitDto = mapper.Map<ShipVisitDto>(shipVisit);
                 return Ok(shipVisitDto);
             }

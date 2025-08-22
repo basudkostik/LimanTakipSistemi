@@ -46,17 +46,13 @@ const PortForm: React.FC<PortFormProps> = ({ port, onSubmit, onCancel }) => {
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (validateForm()) {
-      if (port) {
-        onSubmit({ ...formData, portId: port.portId });
-      } else {
-        onSubmit(formData);
-      }
-    }
-  };
+const handleSubmit = (e: React.FormEvent) => {
+  e.preventDefault();
+
+  if (validateForm()) {
+    onSubmit(formData);  
+  }
+};
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;

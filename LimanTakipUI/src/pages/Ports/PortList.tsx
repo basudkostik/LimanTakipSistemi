@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Plus, Edit, Trash2, Search, Anchor } from 'lucide-react';
 import { portAPI } from '../../services/api';
 import { Port, AddPortRequest, UpdatePortRequest } from '../../types';
@@ -7,32 +7,53 @@ import PortForm from './PortForm';
 
 const PortList: React.FC = () => {
   const [ports, setPorts] = useState<Port[]>([]);
+  const [allPorts, setAllPorts] = useState<Port[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [searchTerm, setSearchTerm] = useState('');
   const [showForm, setShowForm] = useState(false);
   const [editingPort, setEditingPort] = useState<Port | null>(null);
+  const [filterName, setFilterName] = useState('');
   const [filterCountry, setFilterCountry] = useState('');
+  const [filterCity , setFilterCity] = useState('');
+  
 
-  useEffect(() => {
-    loadPorts();
-  }, []);
+     const params = {
+      name: filterName || undefined,
+      country: filterCountry || undefined, 
+      city: filterCity || undefined,
+      pageNumber: 1,
+      pageSize: 100
+    };
 
   const loadPorts = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-      const response = await portAPI.getAll();
-      console.log('Ports loaded:', response.data);
-      setPorts(response.data || []);
-    } catch (error) {
-      console.error('Error loading ports:', error);
-      setError('Limanlar yüklenirken hata oluştu');
-      setPorts([]);
-    } finally {
-      setLoading(false);
-    }
-  };
+  try {
+    setLoading(true);
+    setError(null);
+
+    const response = await portAPI.getAll(params);
+    const response_all = await portAPI.getAll();
+    console.log('Ports loaded:', response.data);
+    setAllPorts(response_all.data || []);
+    setPorts(response.data || []);
+  } catch (error) {
+    console.error('Error loading ports:', error);
+    setError('Limanlar yüklenirken hata oluştu');
+    setPorts([]);
+  } finally {
+    setLoading(false);
+  }
+};
+
+
+ useEffect(() =>
+{
+  loadPorts(); 
+}, [filterName , filterCountry , filterCity]
+);
+
+
+  const uniqueCountries =  [...new Set(allPorts.map(port => port.country).filter(Boolean))]  ;
+  const uniqueCities = [...new Set(allPorts.map(port => port.city).filter(Boolean))];
 
   const handleCreate = async (data: AddPortRequest) => {
     try {
@@ -65,16 +86,18 @@ const PortList: React.FC = () => {
     }
   };
 
-  const filteredPorts = ports.filter(port => {
-    const matchesSearch = port.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         port.city?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         port.country?.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesCountry = !filterCountry || port.country === filterCountry;
+  // const filteredPorts = ports.filter(port => {
+  //   const matchesSearch = port.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+  //                        port.city?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+  //                        port.country?.toLowerCase().includes(searchTerm.toLowerCase()) || 
+  //                        port.city?.toLowerCase().includes(searchTerm.toLowerCase());
+  //   const matchesCountry = !filterCountry || port.country === filterCountry   ;
+  //   const matchesCity = !filterCity || port.city === filterCity;
     
-    return matchesSearch && matchesCountry;
-  });
+  //   return matchesSearch && matchesCountry  && matchesCity;
+  // });
 
-  const uniqueCountries = [...new Set(ports.map(port => port.country).filter(Boolean))];
+
 
   const PortFilters = (
     <div className="space-y-4">
@@ -87,8 +110,8 @@ const PortList: React.FC = () => {
           <input
             type="text"
             placeholder="Liman adı, şehir veya ülke..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
+            value={filterName}
+            onChange={(e) => setFilterName(e.target.value)}
             className="input-field pl-10"
           />
         </div>
@@ -109,6 +132,22 @@ const PortList: React.FC = () => {
           ))}
         </select>
       </div>
+
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-2">
+          Şehir
+        </label>
+        <select
+          value={filterCity}
+          onChange={(e) => setFilterCity(e.target.value)}
+          className="input-field"
+        >
+          <option value="">Tüm Şehirler</option>
+          {uniqueCities.map(city  => (
+            <option key={city} value={city}>{city}</option>
+          ))}
+        </select>
+      </div>
     </div>
   );
 
@@ -124,6 +163,7 @@ const PortList: React.FC = () => {
       </MainLayout>
     );
   }
+
 
   if (error) {
     return (
@@ -151,7 +191,9 @@ const PortList: React.FC = () => {
         <div className="flex justify-between items-center">
           <div>
             <h1 className="text-2xl font-bold text-gray-900">Liman Yönetimi</h1>
-            <p className="text-gray-600">Limanları listele, ekle, düzenle ve sil</p>
+            <p className="text-gray-600">
+              Limanları listele, ekle, düzenle ve sil
+            </p>
           </div>
           <button
             onClick={() => setShowForm(true)}
@@ -165,16 +207,24 @@ const PortList: React.FC = () => {
         {/* Stats */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div className="card">
-            <div className="text-sm font-medium text-gray-500">Toplam Liman</div>
-            <div className="text-2xl font-bold text-gray-900">{ports.length}</div>
+            <div className="text-sm font-medium text-gray-500">
+              Toplam Liman
+            </div>
+            <div className="text-2xl font-bold text-gray-900">
+              {allPorts.length}
+            </div>
           </div>
           <div className="card">
             <div className="text-sm font-medium text-gray-500">Farklı Ülke</div>
-            <div className="text-2xl font-bold text-gray-900">{uniqueCountries.length}</div>
+            <div className="text-2xl font-bold text-gray-900">
+              {uniqueCountries.length}
+            </div>
           </div>
           <div className="card">
             <div className="text-sm font-medium text-gray-500">Filtrelenen</div>
-            <div className="text-2xl font-bold text-gray-900">{filteredPorts.length}</div>
+            <div className="text-2xl font-bold text-gray-900">
+              {ports.length}
+            </div>
           </div>
         </div>
 
@@ -191,18 +241,29 @@ const PortList: React.FC = () => {
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {filteredPorts.length === 0 ? (
+                {ports.length === 0 ? (
                   <tr>
-                    <td colSpan={4} className="table-cell text-center text-gray-500 py-8">
-                      {searchTerm || filterCountry ? 'Arama kriterlerine uygun liman bulunamadı' : 'Henüz liman eklenmemiş'}
+                    <td
+                      colSpan={4}
+                      className="table-cell text-center text-gray-500 py-8"
+                    >
+                      {filterName || filterCountry || filterCity
+                        ? "Arama kriterlerine uygun liman bulunamadı"
+                        : "Henüz liman eklenmemiş"}
                     </td>
                   </tr>
                 ) : (
-                  filteredPorts.map((port) => (
+                  ports.map((port) => (
                     <tr key={port.portId} className="hover:bg-gray-50">
-                      <td className="table-cell font-medium">{port.name || 'İsimsiz'}</td>
-                      <td className="table-cell">{port.country || 'Belirtilmemiş'}</td>
-                      <td className="table-cell">{port.city || 'Belirtilmemiş'}</td>
+                      <td className="table-cell font-medium">
+                        {port.name || "İsimsiz"}
+                      </td>
+                      <td className="table-cell">
+                        {port.country || "Belirtilmemiş"}
+                      </td>
+                      <td className="table-cell">
+                        {port.city || "Belirtilmemiş"}
+                      </td>
                       <td className="table-cell">
                         <div className="flex space-x-2">
                           <button
@@ -234,7 +295,13 @@ const PortList: React.FC = () => {
       {(showForm || editingPort) && (
         <PortForm
           port={editingPort}
-          onSubmit={editingPort ? handleUpdate : handleCreate}
+          onSubmit={(data) => {
+            if (editingPort) {
+              handleUpdate(editingPort.portId, data);
+            } else {
+              handleCreate(data);
+            }
+          }}
           onCancel={() => {
             setShowForm(false);
             setEditingPort(null);

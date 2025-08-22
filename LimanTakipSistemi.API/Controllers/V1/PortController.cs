@@ -1,4 +1,5 @@
-﻿using AutoMapper;
+﻿using Asp.Versioning;
+using AutoMapper;
 using LimanTakipSistemi.API.Data;
 using LimanTakipSistemi.API.Models.Domain;
 using LimanTakipSistemi.API.Models.DTOs.Port;
@@ -7,9 +8,9 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace LimanTakipSistemi.API.Controllers.V1
 {
+    [ApiController]
     [ApiVersion("1.0")]
     [Route("api/v{version:apiVersion}/[controller]")]
-    [ApiController]
     public class PortController : ControllerBase
     {
         private readonly LimanTakipDbContext dbContext;
@@ -66,7 +67,7 @@ namespace LimanTakipSistemi.API.Controllers.V1
 
         [HttpPut]
         [Route("{id:int}")]
-        public IActionResult Update([FromRoute]int id, [FromBody] UpdatePortRequestDto updatePortRequestDto)
+        public IActionResult Update([FromRoute] int id, [FromBody] UpdatePortRequestDto updatePortRequestDto)
         {
             if (updatePortRequestDto == null)
             {
@@ -82,17 +83,17 @@ namespace LimanTakipSistemi.API.Controllers.V1
                 port.Name = updatePortRequestDto.Name;
                 port.Country = updatePortRequestDto.Country;
                 port.City = updatePortRequestDto.City;
-                
+
                 dbContext.SaveChanges();
                 var portDto = mapper.Map<PortDto>(port);
                 return Ok(portDto);
             }
-                
+
         }
 
         [HttpDelete]
-        [Route("{id:int}")] 
-        public IActionResult Delete([FromRoute]int id)
+        [Route("{id:int}")]
+        public IActionResult Delete([FromRoute] int id)
         {
             var port = dbContext.Ports.FirstOrDefault(x => x.PortId == id);
             if (port == null)
@@ -103,7 +104,7 @@ namespace LimanTakipSistemi.API.Controllers.V1
             {
                 dbContext.Ports.Remove(port);
                 dbContext.SaveChanges();
-                
+
                 var portDto = mapper.Map<PortDto>(port);
                 return Ok(portDto);
             }

@@ -1,40 +1,44 @@
-﻿using AutoMapper;
+using AutoMapper;
 using LimanTakipSistemi.API.Data;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using LimanTakipSistemi.API.Models.DTOs.Ship;
 using LimanTakipSistemi.API.Models.Domain;
 using Asp.Versioning;
+using LimanTakipSistemi.API.Repositories.ShipRepository.cs;
 
-namespace LimanTakipSistemi.API.Controllers.V1
+namespace LimanTakipSistemi.API.Controllers.V2
 {
     [ApiController]
-    [ApiVersion("1.0")]
+    [ApiVersion("2.0")]
     [Route("api/v{version:apiVersion}/[controller]")]
     public class ShipController : ControllerBase
     {
-        private readonly LimanTakipDbContext dbContext;
+        private readonly IShipRepository shipRepository;
+
         private readonly IMapper mapper;
 
-        public ShipController(LimanTakipDbContext dbContext, IMapper mapper)
+        public ShipController(IShipRepository shipRepository, IMapper mapper)
         {
-            this.dbContext = dbContext;
+            this.shipRepository = shipRepository;
             this.mapper = mapper;
         }
 
         [HttpGet]
-        public IActionResult GetAll()
+        public async Task<IActionResult> GetAll([FromQuery] int? shipId, [FromQuery] string? name, [FromQuery] string? IMO,
+        [FromQuery] string? type, [FromQuery] string? flag, [FromQuery] int? yearbuilt,
+        [FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 100)
         {
-            var ships = dbContext.Ships.ToList();
+            var ships = await shipRepository.GetAllAsync(shipId, name, IMO, type, flag, yearbuilt, pageNumber = 1, pageSize = 100);
             var shipsDto = mapper.Map<List<ShipDto>>(ships);
             return Ok(shipsDto);
         }
 
         [HttpGet]
         [Route("{id:int}")]
-        public IActionResult GetById(int id)
+        public async Task<IActionResult> GetById([FromRoute] int id)
         {
-            var ship = dbContext.Ships.FirstOrDefault(s => s.ShipId == id);
+            var ship = await shipRepository.GetByIdAsync(id);
             if (ship == null)
             {
                 return NotFound();
@@ -44,41 +48,34 @@ namespace LimanTakipSistemi.API.Controllers.V1
         }
 
         [HttpPost]
-        public IActionResult Create([FromBody] AddShipRequestDto addShipRequestDto)
+        public async Task<IActionResult> Create([FromBody] AddShipRequestDto addShipRequestDto)
         {
-            if (addShipRequestDto == null)
-            {
-                return BadRequest("Ship data is required.");
-            }
+
             var ship = mapper.Map<Ship>(addShipRequestDto);
-            dbContext.Ships.Add(ship);
-            dbContext.SaveChanges();
+            ship = await shipRepository.CreateAsync(ship);
             var shipDto = mapper.Map<ShipDto>(ship);
             return CreatedAtAction(nameof(GetById), new { id = ship.ShipId }, shipDto);
         }
 
         [HttpPut]
         [Route("{id:int}")]
-        public IActionResult Update([FromRoute] int id, [FromBody] UpdateShipRequestDto updateShipRequestDto)
+        public async Task<IActionResult> Update([FromRoute] int id, [FromBody] UpdateShipRequestDto updateShipRequestDto)
         {
             if (updateShipRequestDto == null)
             {
                 return BadRequest("Ship data is required.");
             }
-            var ship = dbContext.Ships.FirstOrDefault(s => s.ShipId == id);
+
+
+            var ship = mapper.Map<Ship>(updateShipRequestDto);
+
+            ship = await shipRepository.UpdateAsync(id, ship);
             if (ship == null)
             {
                 return NotFound();
             }
             else
             {
-                ship.Name = updateShipRequestDto.Name;
-                ship.IMO = updateShipRequestDto.IMO;
-                ship.Type = updateShipRequestDto.Type;
-                ship.Flag = updateShipRequestDto.Flag;
-                ship.YearBuilt = updateShipRequestDto.YearBuilt;
-
-                dbContext.SaveChanges();
                 var shipDto = mapper.Map<ShipDto>(ship);
                 return Ok(shipDto);
             }
@@ -87,16 +84,14 @@ namespace LimanTakipSistemi.API.Controllers.V1
 
         [HttpDelete]
         [Route("{id:int}")]
-        public IActionResult Delete([FromRoute] int id)
+        public async Task<IActionResult> Delete([FromRoute] int id)
         {
-            var ship = dbContext.Ships.FirstOrDefault(s => s.ShipId == id);
+            var ship = await shipRepository.DeleteAsync(id);
+
             if (ship == null)
             {
                 return NotFound();
             }
-            dbContext.Ships.Remove(ship);
-            dbContext.SaveChanges();
-
             var shipDto = mapper.Map<ShipDto>(ship);
             return Ok(shipDto);
 

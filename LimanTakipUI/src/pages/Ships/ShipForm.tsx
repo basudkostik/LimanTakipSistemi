@@ -60,17 +60,13 @@ const ShipForm: React.FC<ShipFormProps> = ({ ship, onSubmit, onCancel }) => {
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (validateForm()) {
-      if (ship) {
-        onSubmit({ ...formData, shipId: ship.shipId });
-      } else {
-        onSubmit(formData);
-      }
-    }
-  };
+const handleSubmit = (e: React.FormEvent) => {
+  e.preventDefault();
+
+  if (validateForm()) {
+    onSubmit(formData);  
+  }
+};
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
