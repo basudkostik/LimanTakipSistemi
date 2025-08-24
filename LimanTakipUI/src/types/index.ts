@@ -46,11 +46,12 @@ export interface UpdatePortRequest {
 
 // Ship Visit Management
 export interface ShipVisit {
-  shipVisitId: number;
+  visitId: number;
   shipId: number;
   portId: number;
   arrivalDate: string;
   departureDate: string;
+  purpose: string;
   ship?: Ship;
   port?: Port;
 }
@@ -60,6 +61,7 @@ export interface AddShipVisitRequest {
   portId: number;
   arrivalDate: string;
   departureDate: string;
+  purpose: string;
 }
 
 export interface UpdateShipVisitRequest {
@@ -67,6 +69,7 @@ export interface UpdateShipVisitRequest {
   portId: number;
   arrivalDate: string;
   departureDate: string;
+  purpose: string;
 }
 
 // Cargo Management
@@ -75,7 +78,7 @@ export interface Cargo {
   shipId: number;
   description: string;
   weight: number;
-  type: string;
+  cargoType: string;
   ship?: Ship;
 }
 
@@ -83,14 +86,14 @@ export interface AddCargoRequest {
   shipId: number;
   description: string;
   weight: number;
-  type: string;
+  cargoType: string;
 }
 
 export interface UpdateCargoRequest {
   shipId: number;
   description: string;
   weight: number;
-  type: string;
+  cargoType: string;
 }
 
 // Crew Member Management

@@ -7,23 +7,49 @@ import ShipForm from './ShipForm';
 
 const ShipList: React.FC = () => {
   const [ships, setShips] = useState<Ship[]>([]);
+  const [allShips, setAllShips] = useState<Ship[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [showForm, setShowForm] = useState(false);
-  const [editingShip, setEditingShip] = useState<Ship | null>(null);
+  const [filterName, setFilterName] = useState('');
+  const [filterIMO, setFilterIMO] = useState('');
+  const [filterYearBuilt, setFilterYearBuilt] = useState('');
   const [filterType, setFilterType] = useState('');
   const [filterFlag, setFilterFlag] = useState('');
+  const [showForm, setShowForm] = useState(false);
+  const [editingShip, setEditingShip] = useState<Ship | null>(null);
+ 
+  const shipTypes = [
+    'Konteyner Gemisi',
+    'Tanker',
+    'Bulk Carrier',
+    'Ro-Ro Gemisi',
+    'Yolcu Gemisi',
+    'Balıkçı Gemisi',
+    'Yat',
+    'Diğer'
+  ];
 
   useEffect(() => {
     loadShips();
-  }, []);
+  }, [filterName, filterIMO, filterYearBuilt, filterType, filterFlag ]);
+
+  const params = {
+    name: filterName || undefined,
+    IMO: filterIMO || undefined,
+    yearbuilt: filterYearBuilt || undefined,
+    type: filterType || undefined,
+    flag: filterFlag || undefined,
+    pageNumber: 1,
+    pageSize: 100
+  };
 
   const loadShips = async () => {
     try {
       setLoading(true);
       setError(null);
-      const response = await shipAPI.getAll();
+      const response = await shipAPI.getAll(params);
+      const response_all = await shipAPI.getAll();
+      setAllShips(response_all.data || []);
       console.log('Ships loaded:', response.data);
       setShips(response.data || []);
     } catch (error) {
@@ -44,6 +70,7 @@ const ShipList: React.FC = () => {
     } catch (error) {
       console.log("🚀 Creating ship with data:", data);
       console.error('Error creating ship:', error);
+      throw error; // Hatayı form'a geri gönder
     }
   };
 
@@ -54,6 +81,7 @@ const ShipList: React.FC = () => {
       loadShips();
     } catch (error) {
       console.error('Error updating ship:', error);
+      throw error; // Hatayı form'a geri gönder
     }
   };
 
@@ -68,17 +96,10 @@ const ShipList: React.FC = () => {
     }
   };
 
-  const filteredShips = ships.filter(ship => {
-    const matchesSearch = ship.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         ship.imo?.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesType = !filterType || ship.type === filterType;
-    const matchesFlag = !filterFlag || ship.flag === filterFlag;
-    
-    return matchesSearch && matchesType && matchesFlag;
-  });
-
-  const uniqueTypes = [...new Set(ships.map(ship => ship.type).filter(Boolean))];
-  const uniqueFlags = [...new Set(ships.map(ship => ship.flag).filter(Boolean))];
+   
+  
+  const uniqueTypes = [...new Set(allShips.map(ship => ship.type).filter(Boolean))];
+  const uniqueFlags = [...new Set(allShips.map(ship => ship.flag).filter(Boolean))];
 
   // Safe calculations with null checks
   const totalYearBuilt = ships.reduce((sum, ship) => {
@@ -90,18 +111,46 @@ const ShipList: React.FC = () => {
     <div className="space-y-4">
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-2">
-          Arama
+          Gemi Adı
         </label>
         <div className="relative">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
           <input
             type="text"
-            placeholder="Gemi adı veya IMO..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
+            placeholder="Gemi adını giriniz..."
+            value={filterName}
+            onChange={(e) => setFilterName(e.target.value)}
             className="input-field pl-10"
           />
         </div>
+      </div>
+
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-2">
+          IMO Numarası
+        </label>
+        <input
+          type="text"
+          placeholder="IMO numarasını giriniz..."
+          value={filterIMO}
+          onChange={(e) => setFilterIMO(e.target.value)}
+          className="input-field"
+        />
+      </div>
+
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-2">
+          Yapım Yılı
+        </label>
+        <input
+          type="number"
+          placeholder="Yapım yılını giriniz..."
+          value={filterYearBuilt}
+          onChange={(e) => setFilterYearBuilt(e.target.value)}
+          min="1900"
+          max={new Date().getFullYear() + 1}
+          className="input-field"
+        />
       </div>
 
       <div>
@@ -114,7 +163,7 @@ const ShipList: React.FC = () => {
           className="input-field"
         >
           <option value="">Tüm Tipler</option>
-          {uniqueTypes.map(type => (
+          {shipTypes.map(type => (
             <option key={type} value={type}>{type}</option>
           ))}
         </select>
@@ -134,6 +183,22 @@ const ShipList: React.FC = () => {
             <option key={flag} value={flag}>{flag}</option>
           ))}
         </select>
+      </div>
+
+      {/* Filtreleri Temizle Butonu */}
+      <div className="pt-2">
+        <button
+          onClick={() => {
+            setFilterName('');
+            setFilterIMO('');
+            setFilterYearBuilt('');
+            setFilterType('');
+            setFilterFlag('');
+          }}
+          className="w-full btn-secondary text-sm py-2"
+        >
+          Filtreleri Temizle
+        </button>
       </div>
     </div>
   );
@@ -189,10 +254,10 @@ const ShipList: React.FC = () => {
         </div>
 
         {/* Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
           <div className="card">
             <div className="text-sm font-medium text-gray-500">Toplam Gemi</div>
-            <div className="text-2xl font-bold text-gray-900">{ships.length}</div>
+            <div className="text-2xl font-bold text-gray-900">{allShips.length}</div>
           </div>
           <div className="card">
             <div className="text-sm font-medium text-gray-500">Farklı Tip</div>
@@ -205,8 +270,12 @@ const ShipList: React.FC = () => {
             </div>
           </div>
           <div className="card">
+            <div className="text-sm font-medium text-gray-500">Farklı Bayrak</div>
+            <div className="text-2xl font-bold text-gray-900">{uniqueFlags.length}</div>
+          </div>
+          <div className="card">
             <div className="text-sm font-medium text-gray-500">Filtrelenen</div>
-            <div className="text-2xl font-bold text-gray-900">{filteredShips.length}</div>
+            <div className="text-2xl font-bold text-gray-900">{ships.length}</div>
           </div>
         </div>
 
@@ -225,14 +294,14 @@ const ShipList: React.FC = () => {
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {filteredShips.length === 0 ? (
+                {ships.length === 0 ? (
                   <tr>
                     <td colSpan={6} className="table-cell text-center text-gray-500 py-8">
-                      {searchTerm || filterType || filterFlag ? 'Arama kriterlerine uygun gemi bulunamadı' : 'Henüz gemi eklenmemiş'}
+                      {filterName || filterType || filterFlag ? 'Arama kriterlerine uygun gemi bulunamadı' : 'Henüz gemi eklenmemiş'}
                     </td>
                   </tr>
                 ) : (
-                  filteredShips.map((ship) => (
+                  ships.map((ship) => (
                     <tr key={ship.shipId} className="hover:bg-gray-50">
                       <td className="table-cell font-medium">{ship.name || 'İsimsiz'}</td>
                       <td className="table-cell font-mono">{ship.imo || 'Belirtilmemiş'}</td>
@@ -270,14 +339,14 @@ const ShipList: React.FC = () => {
       {(showForm || editingShip) && (
         <ShipForm
           ship={editingShip}
-          onSubmit={(data) => {
+          onSubmit={async (data) => {
                 if (editingShip)
                     {
-                        handleUpdate(editingShip.shipId, data); // ✅ pass the ID manually
+                        await handleUpdate(editingShip.shipId, data); 
                     }
                      else
                        {
-      handleCreate(data); // ✅ no ID for new ship
+      await handleCreate(data); 
     }
   }}
           onCancel={() => {

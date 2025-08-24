@@ -32,8 +32,8 @@ const PortList: React.FC = () => {
 
     const response = await portAPI.getAll(params);
     const response_all = await portAPI.getAll();
-    console.log('Ports loaded:', response.data);
     setAllPorts(response_all.data || []);
+    console.log('Ports loaded:', response.data);
     setPorts(response.data || []);
   } catch (error) {
     console.error('Error loading ports:', error);
@@ -43,6 +43,7 @@ const PortList: React.FC = () => {
     setLoading(false);
   }
 };
+
 
 
  useEffect(() =>
@@ -147,6 +148,20 @@ const PortList: React.FC = () => {
             <option key={city} value={city}>{city}</option>
           ))}
         </select>
+      </div>
+
+      {/* Filtreleri Temizle Butonu */}
+      <div className="pt-2">
+        <button
+          onClick={() => {
+            setFilterName('');
+            setFilterCountry('');
+            setFilterCity('');
+          }}
+          className="w-full btn-secondary text-sm py-2"
+        >
+          Filtreleri Temizle
+        </button>
       </div>
     </div>
   );

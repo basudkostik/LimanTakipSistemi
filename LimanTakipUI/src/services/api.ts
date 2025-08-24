@@ -21,7 +21,7 @@ api.interceptors.response.use(
 
 // Ship Management API
 export const shipAPI = {
-  getAll: () => api.get('/Ship'),
+  getAll: (params?: any) => api.get('/Ship', {params}),
   getById: (id: number) => api.get(`/Ship/${id}`),
   create: (data: any) => api.post('/Ship', data),
   update: (id: number, data: any) => api.put(`/Ship/${id}`, data),
@@ -39,7 +39,7 @@ export const portAPI = {
 
 // Ship Visit API
 export const shipVisitAPI = {
-  getAll: () => api.get('/ShipVisit'),
+  getAll: (params?: any) => api.get('/ShipVisit', { params }),
   getById: (id: number) => api.get(`/ShipVisit/${id}`),
   create: (data: any) => api.post('/ShipVisit', data),
   update: (id: number, data: any) => api.put(`/ShipVisit/${id}`, data),
@@ -48,7 +48,7 @@ export const shipVisitAPI = {
 
 // Cargo Management API
 export const cargoAPI = {
-  getAll: () => api.get('/Cargo'),
+  getAll: (params?: any) => api.get('/Cargo', { params }),
   getById: (id: number) => api.get(`/Cargo/${id}`),
   create: (data: any) => api.post('/Cargo', data),
   update: (id: number, data: any) => api.put(`/Cargo/${id}`, data),
@@ -57,7 +57,7 @@ export const cargoAPI = {
 
 // Crew Member API
 export const crewMemberAPI = {
-  getAll: () => api.get('/CrewMember'),
+  getAll: (params?: any) => api.get('/CrewMember', { params }),
   getById: (id: number) => api.get(`/CrewMember/${id}`),
   create: (data: any) => api.post('/CrewMember', data),
   update: (id: number, data: any) => api.put(`/CrewMember/${id}`, data),
@@ -66,7 +66,7 @@ export const crewMemberAPI = {
 
 // Ship Crew Assignment API
 export const shipCrewAssignmentAPI = {
-  getAll: () => api.get('/ShipCrewAssignment'),
+  getAll: (params?: any) => api.get('/ShipCrewAssignment', { params }),
   getById: (id: number) => api.get(`/ShipCrewAssignment/${id}`),
   create: (data: any) => api.post('/ShipCrewAssignment', data),
   update: (id: number, data: any) => api.put(`/ShipCrewAssignment/${id}`, data),

@@ -4,7 +4,7 @@ import { Ship as ShipType, AddShipRequest, UpdateShipRequest } from '../../types
 
 interface ShipFormProps {
   ship?: ShipType | null;
-  onSubmit: (data: AddShipRequest | UpdateShipRequest) => void;
+  onSubmit: (data: AddShipRequest | UpdateShipRequest) => Promise<void>;
   onCancel: () => void;
 }
 
@@ -60,11 +60,41 @@ const ShipForm: React.FC<ShipFormProps> = ({ ship, onSubmit, onCancel }) => {
     return Object.keys(newErrors).length === 0;
   };
 
-const handleSubmit = (e: React.FormEvent) => {
+const handleSubmit = async (e: React.FormEvent) => {
   e.preventDefault();
 
   if (validateForm()) {
-    onSubmit(formData);  
+    try {
+    
+      const formDataWithIMO = {
+        ...formData,
+        imo: formData.imo.startsWith('IMO') ? formData.imo : `IMO${formData.imo}`
+      };
+      await onSubmit(formDataWithIMO);
+    } catch (error: any) {
+      if (error.response?.data?.errors) {
+        const apiErrors = error.response.data.errors;
+        
+        
+        if (apiErrors.imo && apiErrors.imo.includes('unique')) {
+          setErrors(prev => ({
+            ...prev,
+            imo: 'IMO numarası benzersiz olmalı'
+          }));
+        } else {
+          setErrors(prev => ({
+            ...prev,
+            ...apiErrors
+          }));
+        }
+      } else if (error.message) {
+        // Genel hata mesajı
+        setErrors(prev => ({
+          ...prev,
+          general: error.message
+        }));
+      }
+    }
   }
 };
 
@@ -92,19 +122,7 @@ const handleSubmit = (e: React.FormEvent) => {
     'Diğer'
   ];
 
-  const flags = [
-    'Türkiye',
-    'Panama',
-    'Liberya',
-    'Marshall Adaları',
-    'Malta',
-    'Yunanistan',
-    'İtalya',
-    'Almanya',
-    'Hollanda',
-    'Norveç',
-    'Diğer'
-  ];
+
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
@@ -189,17 +207,15 @@ const handleSubmit = (e: React.FormEvent) => {
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Bayrak *
             </label>
-            <select
+            <input
+              type='text'
               name="flag"
               value={formData.flag}
               onChange={handleChange}
               className={`input-field ${errors.flag ? 'border-red-500' : ''}`}
-            >
-              <option value="">Bayrak seçiniz</option>
-              {flags.map(flag => (
-                <option key={flag} value={flag}>{flag}</option>
-              ))}
-            </select>
+              placeholder='Bayrak giriniz'
+             />
+          
             {errors.flag && (
               <p className="mt-1 text-sm text-red-600">{errors.flag}</p>
             )}
@@ -224,6 +240,13 @@ const handleSubmit = (e: React.FormEvent) => {
               <p className="mt-1 text-sm text-red-600">{errors.yearBuilt}</p>
             )}
           </div>
+
+          {/* General Error */}
+          {errors.general && (
+            <div className="bg-red-50 border border-red-200 rounded-md p-3">
+              <p className="text-sm text-red-600">{errors.general}</p>
+            </div>
+          )}
 
           {/* Form Actions */}
           <div className="flex space-x-3 pt-4">
