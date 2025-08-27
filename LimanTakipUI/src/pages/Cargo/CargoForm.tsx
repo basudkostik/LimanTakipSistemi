@@ -72,13 +72,22 @@ const CargoForm: React.FC<CargoFormProps> = ({
       try {
         await onSubmit(formData);
       } catch (error: any) {
-        if (error.response?.data?.errors) {
+        
+        if (error.response?.data?.message) {
+          //  service layer hataları
+          setErrors(prev => ({
+            ...prev,
+            general: error.response.data.message
+          }));
+        } else if (error.response?.data?.errors) {
+          // Model validation hataları
           const apiErrors = error.response.data.errors;
           setErrors(prev => ({
             ...prev,
             ...apiErrors
           }));
         } else if (error.message) {
+          // Genel hata mesajı 
           setErrors(prev => ({
             ...prev,
             general: error.message
@@ -96,7 +105,6 @@ const CargoForm: React.FC<CargoFormProps> = ({
               name === 'weight' ? parseFloat(value) || 0 : value,
     }));
     
-    // Clear error when user starts typing
     if (errors[name]) {
       setErrors(prev => ({ ...prev, [name]: '' }));
     }

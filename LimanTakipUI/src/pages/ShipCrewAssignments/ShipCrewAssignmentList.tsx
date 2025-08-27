@@ -17,12 +17,12 @@ const ShipCrewAssignmentList: React.FC = () => {
   
   // Filtreler
   const [filterShipId, setFilterShipId] = useState('');
-  const [filterCrewMemberId, setFilterCrewMemberId] = useState('');
+  const [filterCrewId, setFilterCrewId] = useState('');
   const [filterAssignmentDate, setFilterAssignmentDate] = useState('');
 
   const params = {
     shipId: filterShipId ? parseInt(filterShipId) : undefined,
-    crewMemberId: filterCrewMemberId ? parseInt(filterCrewMemberId) : undefined,
+    crewId: filterCrewId ? parseInt(filterCrewId) : undefined,
     assignmentDate: filterAssignmentDate || undefined,
     pageNumber: 1,
     pageSize: 100
@@ -36,7 +36,7 @@ const ShipCrewAssignmentList: React.FC = () => {
     if (ships.length > 0 && crewMembers.length > 0) {
       loadAssignments();
     }
-  }, [filterShipId, filterCrewMemberId, filterAssignmentDate, ships, crewMembers]);
+  }, [filterShipId, filterCrewId, filterAssignmentDate, ships, crewMembers]);
 
   const loadShipsAndCrewMembers = async () => {
     try {
@@ -76,16 +76,18 @@ const ShipCrewAssignmentList: React.FC = () => {
       console.log('📋 Filtered Assignments loaded:', filteredAssignments);
       console.log('📊 All Assignments loaded:', allAssignmentsData);
 
+      console.log('📦 API çağrısına gönderilen filtre parametreleri:', params);
+
       const assignmentsWithRelations = filteredAssignments.map(assignment => ({
         ...assignment,
         ship: ships.find(ship => ship.shipId === assignment.shipId),
-        crewMember: crewMembers.find(crew => crew.crewMemberId === assignment.crewMemberId)
+        crewMember: crewMembers.find(crew => crew.crewId === assignment.crewId)
       }));
 
       const allAssignmentsWithRelations = allAssignmentsData.map(assignment => ({
         ...assignment,
         ship: ships.find(ship => ship.shipId === assignment.shipId),
-        crewMember: crewMembers.find(crew => crew.crewMemberId === assignment.crewMemberId)
+        crewMember: crewMembers.find(crew => crew.crewId === assignment.crewId)
       }));
 
       setAllAssignments(allAssignmentsWithRelations);
@@ -138,10 +140,9 @@ const ShipCrewAssignmentList: React.FC = () => {
     }
   };
 
-  // İstatistikler
+  
   const totalAssignments = allAssignments.length;
-  const uniqueShips = [...new Set(allAssignments.map(assignment => assignment.shipId))].length;
-  const uniqueCrewMembers = [...new Set(allAssignments.map(assignment => assignment.crewMemberId))].length;
+  const uniqueCrewMembers = [...new Set(allAssignments.map(assignment => assignment.crewId))].length;
   const activeShips = ships.filter(ship => 
     allAssignments.some(assignment => assignment.shipId === ship.shipId)
   ).length;
@@ -164,6 +165,11 @@ const ShipCrewAssignmentList: React.FC = () => {
             </option>
           ))}
         </select>
+
+        {/* Seçilen gemi ID'sini göster */}
+  <p className="mt-2 text-gray-600">
+    Seçilen Gemi ID: {filterShipId || 'Yok'}
+  </p>
       </div>
 
       <div>
@@ -171,17 +177,21 @@ const ShipCrewAssignmentList: React.FC = () => {
           Mürettebat
         </label>
         <select
-          value={filterCrewMemberId}
-          onChange={(e) => setFilterCrewMemberId(e.target.value)}
+          value={filterCrewId}
+          onChange={(e) => setFilterCrewId(e.target.value)}
           className="input-field"
         >
           <option key="all-crew" value="">Tüm Mürettebat</option>
           {crewMembers.map((crewMember, index) => (
-            <option key={`crew-${crewMember.crewMemberId || `temp-${index}`}`} value={crewMember.crewMemberId}>
-              {crewMember.name} - {crewMember.position}
+            <option key={`crew-${crewMember.crewId || `temp-${index}`}`} value={crewMember.crewId}>
+              {crewMember.firstName +" "+crewMember.lastName} - {crewMember.role}
             </option>
           ))}
         </select>
+        {/* Seçilen crew ID'sini göster */}
+  <p className="mt-2 text-gray-600">
+    Seçilen Crew ID: {filterCrewId || 'Yok'}
+  </p>
       </div>
 
       <div>
@@ -201,7 +211,7 @@ const ShipCrewAssignmentList: React.FC = () => {
         <button
           onClick={() => {
             setFilterShipId('');
-            setFilterCrewMemberId('');
+            setFilterCrewId('');
             setFilterAssignmentDate('');
           }}
           className="w-full btn-secondary text-sm py-2"
@@ -299,13 +309,13 @@ const ShipCrewAssignmentList: React.FC = () => {
                 {assignments.length === 0 ? (
                   <tr>
                     <td colSpan={5} className="table-cell text-center text-gray-500 py-8">
-                      {filterShipId || filterCrewMemberId || filterAssignmentDate
+                      {filterShipId || filterCrewId || filterAssignmentDate
                         ? 'Arama kriterlerine uygun atama bulunamadı'
                         : 'Henüz atama kaydı eklenmemiş'}
                     </td>
                   </tr>
                 ) : (
-                  assignments.map((assignment, index) => (
+                  assignments.map((assignment, index) => (  
                     <tr key={assignment.assignmentId || `assignment-${index}`} className="hover:bg-gray-50">
                       <td className="table-cell">
                         <div className="flex items-center space-x-2">
@@ -320,14 +330,13 @@ const ShipCrewAssignmentList: React.FC = () => {
                         <div className="flex items-center space-x-2">
                           <User className="h-4 w-4 text-green-600" />
                           <div>
-                            <div className="font-medium">{assignment.crewMember?.name || 'Bilinmeyen Mürettebat'}</div>
-                            <div className="text-sm text-gray-500">{assignment.crewMember?.nationality}</div>
+                            <div className="font-medium">{ (assignment.crewMember?.firstName+" "+assignment.crewMember?.lastName  )  || 'Bilinmeyen Mürettebat'}</div>
                           </div>
                         </div>
                       </td>
                       <td className="table-cell">
                         <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
-                          {assignment.crewMember?.position || 'Bilinmeyen'}
+                          {assignment.crewMember?.role || 'Bilinmeyen'}
                         </span>
                       </td>
                       <td className="table-cell">
@@ -369,6 +378,7 @@ const ShipCrewAssignmentList: React.FC = () => {
           assignment={editingAssignment}
           ships={ships}
           crewMembers={crewMembers}
+          existingAssignments={allAssignments}
           onSubmit={async (data) => {
             if (editingAssignment) {
               await handleUpdate(editingAssignment.assignmentId, data);

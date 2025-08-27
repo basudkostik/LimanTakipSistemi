@@ -6,6 +6,7 @@ interface ShipCrewAssignmentFormProps {
   assignment?: ShipCrewAssignment | null;
   ships: Ship[];
   crewMembers: CrewMember[];
+  existingAssignments: ShipCrewAssignment[];
   onSubmit: (data: AddShipCrewAssignmentRequest | UpdateShipCrewAssignmentRequest) => Promise<void>;
   onCancel: () => void;
 }
@@ -14,12 +15,13 @@ const ShipCrewAssignmentForm: React.FC<ShipCrewAssignmentFormProps> = ({
   assignment, 
   ships,
   crewMembers,
+  existingAssignments,
   onSubmit, 
   onCancel 
 }) => {
   const [formData, setFormData] = useState<AddShipCrewAssignmentRequest>({
     shipId: 0,
-    crewMemberId: 0,
+    crewId: 0,
     assignmentDate: '',
   });
 
@@ -29,7 +31,7 @@ const ShipCrewAssignmentForm: React.FC<ShipCrewAssignmentFormProps> = ({
     if (assignment) {
       setFormData({
         shipId: assignment.shipId,
-        crewMemberId: assignment.crewMemberId,
+        crewId: assignment.crewId,
         assignmentDate: assignment.assignmentDate.split('T')[0], // Sadece tarih kısmını al
       });
     } else {
@@ -37,7 +39,7 @@ const ShipCrewAssignmentForm: React.FC<ShipCrewAssignmentFormProps> = ({
       const today = new Date().toISOString().split('T')[0];
       setFormData({
         shipId: 0,
-        crewMemberId: 0,
+        crewId: 0,
         assignmentDate: today,
       });
     }
@@ -50,7 +52,7 @@ const ShipCrewAssignmentForm: React.FC<ShipCrewAssignmentFormProps> = ({
       newErrors.shipId = 'Gemi seçimi zorunludur';
     }
 
-    if (!formData.crewMemberId) {
+    if (!formData.crewId) {
       newErrors.crewMemberId = 'Mürettebat seçimi zorunludur';
     }
 
@@ -58,8 +60,18 @@ const ShipCrewAssignmentForm: React.FC<ShipCrewAssignmentFormProps> = ({
       newErrors.assignmentDate = 'Atama tarihi zorunludur';
     }
 
-    // Aynı mürettebat üyesinin aynı tarihte başka bir gemiye atanmış olup olmadığını kontrol et
-    // Bu kontrol backend'de de yapılmalı, burada sadece client-side validation
+    if (formData.crewId && formData.assignmentDate) {
+    const isDuplicate = existingAssignments.some((a) => {
+    const sameDate = a.assignmentDate.split('T')[0] === formData.assignmentDate;
+    const sameCrew = a.crewId === formData.crewId;
+    const differentAssignment = assignment ? a.assignmentId !== assignment.assignmentId : true;
+    return sameDate && sameCrew && differentAssignment;
+  });
+
+  if (isDuplicate) {
+    newErrors.crewMemberId = 'Bu mürettebat üyesi bu tarihte başka bir gemiye atanmış.';
+  }
+}
     
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -78,13 +90,22 @@ const ShipCrewAssignmentForm: React.FC<ShipCrewAssignmentFormProps> = ({
         
         await onSubmit(formDataWithDate);
       } catch (error: any) {
-        if (error.response?.data?.errors) {
+        
+        if (error.response?.data?.message) {
+          //  service layer hataları
+          setErrors(prev => ({
+            ...prev,
+            general: error.response.data.message
+          }));
+        } else if (error.response?.data?.errors) {
+          // Model validation hataları
           const apiErrors = error.response.data.errors;
           setErrors(prev => ({
             ...prev,
             ...apiErrors
           }));
         } else if (error.message) {
+          // Genel hata mesajı 
           setErrors(prev => ({
             ...prev,
             general: error.message
@@ -98,7 +119,7 @@ const ShipCrewAssignmentForm: React.FC<ShipCrewAssignmentFormProps> = ({
     const { name, value } = e.target;
     setFormData(prev => ({
       ...prev,
-      [name]: name === 'shipId' || name === 'crewMemberId' ? parseInt(value) || 0 : value,
+      [name]: name === 'shipId' || name === 'crewId' ? parseInt(value) || 0 : value,
     }));
     
     // Clear error when user starts typing
@@ -162,15 +183,15 @@ const ShipCrewAssignmentForm: React.FC<ShipCrewAssignmentFormProps> = ({
             <div className="relative">
               <User className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
               <select
-                name="crewMemberId"
-                value={formData.crewMemberId}
+                name="crewId"
+                value={formData.crewId}
                 onChange={handleChange}
                 className={`input-field pl-10 ${errors.crewMemberId ? 'border-red-500' : ''}`}
               >
                 <option key="select-crew" value={0}>Mürettebat seçiniz</option>
                 {crewMembers.map((crewMember, index) => (
-                  <option key={`crew-${crewMember.crewMemberId || `temp-${index}`}`} value={crewMember.crewMemberId}>
-                    {crewMember.name} - {crewMember.position}
+                  <option key={`crew-${crewMember.crewId || `temp-${index}`}`} value={crewMember.crewId}>
+                    {crewMember.firstName +" "+crewMember.lastName} - {crewMember.role}
                   </option>
                 ))}
               </select>

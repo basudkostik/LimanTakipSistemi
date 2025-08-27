@@ -4,7 +4,7 @@ import { Port as PortType, AddPortRequest, UpdatePortRequest } from '../../types
 
 interface PortFormProps {
   port?: PortType | null;
-  onSubmit: (data: AddPortRequest | UpdatePortRequest) => void;
+  onSubmit: (data: AddPortRequest | UpdatePortRequest) => Promise<void>;
   onCancel: () => void;
 }
 
@@ -46,11 +46,35 @@ const PortForm: React.FC<PortFormProps> = ({ port, onSubmit, onCancel }) => {
     return Object.keys(newErrors).length === 0;
   };
 
-const handleSubmit = (e: React.FormEvent) => {
+const handleSubmit = async (e: React.FormEvent) => {
   e.preventDefault();
 
   if (validateForm()) {
-    onSubmit(formData);  
+    try {
+      await onSubmit(formData);
+    } catch (error: any) {
+      
+      if (error.response?.data?.message) {
+        // service layer hataları
+        setErrors(prev => ({
+          ...prev,
+          general: error.response.data.message
+        }));
+      } else if (error.response?.data?.errors) {
+        // Model validation hataları
+        const apiErrors = error.response.data.errors;
+        setErrors(prev => ({
+          ...prev,
+          ...apiErrors
+        }));
+      } else if (error.message) {
+        // Genel hata mesajı 
+        setErrors(prev => ({
+          ...prev,
+          general: error.message
+        }));
+      }
+    }
   }
 };
 
@@ -61,7 +85,6 @@ const handleSubmit = (e: React.FormEvent) => {
       [name]: value,
     }));
     
-    // Clear error when user starts typing
     if (errors[name]) {
       setErrors(prev => ({ ...prev, [name]: '' }));
     }
@@ -188,6 +211,13 @@ const handleSubmit = (e: React.FormEvent) => {
               <p className="mt-1 text-sm text-red-600">{errors.city}</p>
             )}
           </div>
+
+          {/* General Error */}
+          {errors.general && (
+            <div className="bg-red-50 border border-red-200 rounded-md p-3">
+              <p className="text-sm text-red-600">{errors.general}</p>
+            </div>
+          )}
 
           {/* Action Buttons */}
           <div className="flex space-x-3 pt-4">

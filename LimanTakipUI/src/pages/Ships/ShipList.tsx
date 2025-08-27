@@ -81,7 +81,7 @@ const ShipList: React.FC = () => {
       loadShips();
     } catch (error) {
       console.error('Error updating ship:', error);
-      throw error; // Hatayı form'a geri gönder
+      throw error; 
     }
   };
 

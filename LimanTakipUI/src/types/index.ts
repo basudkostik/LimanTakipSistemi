@@ -1,4 +1,4 @@
-// Ship Management
+
 export interface Ship {
   shipId: number;
   name: string;
@@ -24,7 +24,7 @@ export interface UpdateShipRequest {
   yearBuilt: number;
 }
 
-// Port Management
+
 export interface Port {
   portId: number;
   name: string;
@@ -44,7 +44,7 @@ export interface UpdatePortRequest {
   city: string;
 }
 
-// Ship Visit Management
+
 export interface ShipVisit {
   visitId: number;
   shipId: number;
@@ -72,7 +72,6 @@ export interface UpdateShipVisitRequest {
   purpose: string;
 }
 
-// Cargo Management
 export interface Cargo {
   cargoId: number;
   shipId: number;
@@ -96,55 +95,55 @@ export interface UpdateCargoRequest {
   cargoType: string;
 }
 
-// Crew Member Management
+
 export interface CrewMember {
-  crewMemberId: number;
-  name: string;
+  crewId: number;
+  firstName: string;
+  lastName:string;
   email: string;
-  phone: string;
-  position: string;
-  nationality: string;
+  phoneNumber: string;
+  role: string;
 }
 
 export interface AddCrewMemberRequest {
-  name: string;
+ firstName: string;
+  lastName:string;
   email: string;
-  phone: string;
-  position: string;
-  nationality: string;
+  phoneNumber: string;
+  role: string;
 }
 
 export interface UpdateCrewMemberRequest {
-  name: string;
+ firstName: string;
+  lastName:string;
   email: string;
-  phone: string;
-  position: string;
-  nationality: string;
+  phoneNumber: string;
+  role: string;
 }
 
-// Ship Crew Assignment Management
+ 
 export interface ShipCrewAssignment {
   assignmentId: number;
   shipId: number;
-  crewMemberId: number;
+  crewId: number;
   assignmentDate: string;
-  ship?: Ship;
-  crewMember?: CrewMember;
+  ship? : Ship;
+  crewMember? : CrewMember;
 }
 
 export interface AddShipCrewAssignmentRequest {
   shipId: number;
-  crewMemberId: number;
+  crewId: number;
   assignmentDate: string;
 }
 
 export interface UpdateShipCrewAssignmentRequest {
   shipId: number;
-  crewMemberId: number;
+  crewId: number;
   assignmentDate: string;
 }
 
-// Common Types
+ 
 export interface ApiResponse<T> {
   data: T;
   message?: string;

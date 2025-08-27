@@ -76,6 +76,8 @@ const PortList: React.FC = () => {
     }
   };
 
+     
+
   const handleDelete = async (id: number) => {
     if (window.confirm('Bu limanı silmek istediğinizden emin misiniz?')) {
       try {
@@ -151,14 +153,14 @@ const PortList: React.FC = () => {
       </div>
 
       {/* Filtreleri Temizle Butonu */}
-      <div className="pt-2">
+      <div className="pt-1">
         <button
           onClick={() => {
             setFilterName('');
             setFilterCountry('');
             setFilterCity('');
           }}
-          className="w-full btn-secondary text-sm py-2"
+          className="w-full btn-secondary text-sm py-3"
         >
           Filtreleri Temizle
         </button>
@@ -310,11 +312,11 @@ const PortList: React.FC = () => {
       {(showForm || editingPort) && (
         <PortForm
           port={editingPort}
-          onSubmit={(data) => {
+          onSubmit={async (data) => {
             if (editingPort) {
-              handleUpdate(editingPort.portId, data);
+              await handleUpdate(editingPort.portId, data);
             } else {
-              handleCreate(data);
+              await handleCreate(data);
             }
           }}
           onCancel={() => {

@@ -14,16 +14,15 @@ const CrewMemberForm: React.FC<CrewMemberFormProps> = ({
   onCancel 
 }) => {
   const [formData, setFormData] = useState<AddCrewMemberRequest>({
-    name: '',
+    firstName: '',
+    lastName: '',
     email: '',
-    phone: '',
-    position: '',
-    nationality: '',
+    phoneNumber: '',
+    role: '',
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
 
-  // Yaygın pozisyonlar
   const commonPositions = [
     'Kaptan',
     'Birinci Zabit',
@@ -41,40 +40,24 @@ const CrewMemberForm: React.FC<CrewMemberFormProps> = ({
     'Electrician'
   ];
 
-  // Yaygın ülkeler
-  const commonCountries = [
-    'Türkiye',
-    'Philippines',
-    'India',
-    'Ukraine',
-    'Russia',
-    'Romania',
-    'Bulgaria',
-    'Poland',
-    'Croatia',
-    'Greece',
-    'Myanmar',
-    'China',
-    'Indonesia',
-    'Vietnam'
-  ];
+
 
   useEffect(() => {
     if (crewMember) {
       setFormData({
-        name: crewMember.name,
+        firstName: crewMember.firstName,
+        lastName: crewMember.lastName,
         email: crewMember.email,
-        phone: crewMember.phone,
-        position: crewMember.position,
-        nationality: crewMember.nationality,
+        phoneNumber: crewMember.phoneNumber,
+        role: crewMember.role ,
       });
     } else {
       setFormData({
-        name: '',
+        firstName: '',
+        lastName: '',
         email: '',
-        phone: '',
-        position: '',
-        nationality: '',
+        phoneNumber: '',
+        role: '',
       });
     }
   }, [crewMember]);
@@ -82,8 +65,12 @@ const CrewMemberForm: React.FC<CrewMemberFormProps> = ({
   const validateForm = (): boolean => {
     const newErrors: Record<string, string> = {};
 
-    if (!formData.name.trim()) {
-      newErrors.name = 'İsim soyisim zorunludur';
+    if (!formData.firstName.trim()) {
+      newErrors.firstName = 'İsim  zorunludur';
+    }
+
+    if (!formData.lastName.trim()) {
+      newErrors.lastName = 'İsim  zorunludur';
     }
 
     if (!formData.email.trim()) {
@@ -92,18 +79,13 @@ const CrewMemberForm: React.FC<CrewMemberFormProps> = ({
       newErrors.email = 'Geçerli bir e-posta adresi giriniz';
     }
 
-    if (!formData.phone.trim()) {
-      newErrors.phone = 'Telefon numarası zorunludur';
+    if (!formData.phoneNumber.trim()) {
+      newErrors.phoneNumber = 'Telefon numarası zorunludur';
     }
 
-    if (!formData.position.trim()) {
-      newErrors.position = 'Pozisyon zorunludur';
+    if (!formData.role.trim()) {
+      newErrors.role = 'Pozisyon zorunludur';
     }
-
-    if (!formData.nationality.trim()) {
-      newErrors.nationality = 'Uyrukluk zorunludur';
-    }
-
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -115,13 +97,22 @@ const CrewMemberForm: React.FC<CrewMemberFormProps> = ({
       try {
         await onSubmit(formData);
       } catch (error: any) {
-        if (error.response?.data?.errors) {
+        // Backend'den gelen spesifik hata mesajını kontrol et
+        if (error.response?.data?.message) {
+          // Backend service layer'dan gelen business logic hataları
+          setErrors(prev => ({
+            ...prev,
+            general: error.response.data.message
+          }));
+        } else if (error.response?.data?.errors) {
+          // Model validation hataları
           const apiErrors = error.response.data.errors;
           setErrors(prev => ({
             ...prev,
             ...apiErrors
           }));
         } else if (error.message) {
+          // Genel hata mesajı (network hatası vs.)
           setErrors(prev => ({
             ...prev,
             general: error.message
@@ -137,8 +128,7 @@ const CrewMemberForm: React.FC<CrewMemberFormProps> = ({
       ...prev,
       [name]: value,
     }));
-    
-    // Clear error when user starts typing
+  
     if (errors[name]) {
       setErrors(prev => ({ ...prev, [name]: '' }));
     }
@@ -165,24 +155,45 @@ const CrewMemberForm: React.FC<CrewMemberFormProps> = ({
 
         {/* Form */}
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
-          {/* Name */}
+          {/* FirstName */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              İsim Soyisim *
+              İsim *
             </label>
             <div className="relative">
               <User className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
               <input
                 type="text"
-                name="name"
-                value={formData.name}
+                name="firstName"
+                value={formData.firstName}
                 onChange={handleChange}
-                placeholder="İsim ve soyisim giriniz"
-                className={`input-field pl-10 ${errors.name ? 'border-red-500' : ''}`}
+                placeholder="İsim giriniz"
+                className={`input-field pl-10 ${errors.firstName ? 'border-red-500' : ''}`}
               />
             </div>
-            {errors.name && (
-              <p className="mt-1 text-sm text-red-600">{errors.name}</p>
+            {errors.firstName && (
+              <p className="mt-1 text-sm text-red-600">{errors.firstName}</p>
+            )}
+          </div>
+
+          {/* LastName */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Soyisim *
+            </label>
+            <div className="relative">
+              <User className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+              <input
+                type="text"
+                name="lastName"
+                value={formData.lastName}
+                onChange={handleChange}
+                placeholder="Soyisim  giriniz"
+                className={`input-field pl-10 ${errors.lastName ? 'border-red-500' : ''}`}
+              />
+            </div>
+            {errors.lastName && (
+              <p className="mt-1 text-sm text-red-600">{errors.lastName}</p>
             )}
           </div>
 
@@ -216,15 +227,15 @@ const CrewMemberForm: React.FC<CrewMemberFormProps> = ({
               <Phone className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
               <input
                 type="tel"
-                name="phone"
-                value={formData.phone}
+                name="phoneNumber"
+                value={formData.phoneNumber}
                 onChange={handleChange}
                 placeholder="+90 555 123 45 67"
-                className={`input-field pl-10 ${errors.phone ? 'border-red-500' : ''}`}
+                className={`input-field pl-10 ${errors.phoneNumber ? 'border-red-500' : ''}`}
               />
             </div>
-            {errors.phone && (
-              <p className="mt-1 text-sm text-red-600">{errors.phone}</p>
+            {errors.phoneNumber && (
+              <p className="mt-1 text-sm text-red-600">{errors.phoneNumber}</p>
             )}
           </div>
 
@@ -236,43 +247,19 @@ const CrewMemberForm: React.FC<CrewMemberFormProps> = ({
             <div className="relative">
               <Briefcase className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
               <select
-                name="position"
-                value={formData.position}
+                name="role"
+                value={formData.role}
                 onChange={handleChange}
-                className={`input-field pl-10 ${errors.position ? 'border-red-500' : ''}`}
+                className={`input-field pl-10 ${errors.role ? 'border-red-500' : ''}`}
               >
                 <option key="select-position" value="">Pozisyon seçiniz</option>
-                {commonPositions.map(position => (
-                  <option key={`position-${position}`} value={position}>{position}</option>
+                {commonPositions.map(role => (
+                  <option key={`position-${role}`} value={role}>{role}</option>
                 ))}
               </select>
             </div>
-            {errors.position && (
-              <p className="mt-1 text-sm text-red-600">{errors.position}</p>
-            )}
-          </div>
-
-          {/* Nationality */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Uyrukluk *
-            </label>
-            <div className="relative">
-              <Globe className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-              <select
-                name="nationality"
-                value={formData.nationality}
-                onChange={handleChange}
-                className={`input-field pl-10 ${errors.nationality ? 'border-red-500' : ''}`}
-              >
-                <option key="select-nationality" value="">Uyrukluk seçiniz</option>
-                {commonCountries.map(country => (
-                  <option key={`nationality-${country}`} value={country}>{country}</option>
-                ))}
-              </select>
-            </div>
-            {errors.nationality && (
-              <p className="mt-1 text-sm text-red-600">{errors.nationality}</p>
+            {errors.role && (
+              <p className="mt-1 text-sm text-red-600">{errors.role}</p>
             )}
           </div>
 

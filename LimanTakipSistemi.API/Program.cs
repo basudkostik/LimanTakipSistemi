@@ -11,6 +11,12 @@ using LimanTakipSistemi.API.Repositories.PortRepository;
 using LimanTakipSistemi.API.Repositories.ShipRepository.cs;
 using LimanTakipSistemi.API.Repositories.ShipCrewAssignmentRepository;
 using LimanTakipSistemi.API.Repositories.ShipVisitRepository;
+using LimanTakipSistemi.API.Services.CargoService;
+using LimanTakipSistemi.API.Services.CrewMemberService;
+using LimanTakipSistemi.API.Services.PortService;
+using LimanTakipSistemi.API.Services.ShipService;
+using LimanTakipSistemi.API.Services.ShipCrewAssignmentService;
+using LimanTakipSistemi.API.Services.ShipVisitService;
 
 
 
@@ -43,7 +49,7 @@ builder.Services.AddAutoMapper(typeof(AutoMapperProfiles));
 
 builder.Services.AddApiVersioning(options =>
 {
-    options.DefaultApiVersion = new ApiVersion(1, 0);
+    options.DefaultApiVersion = new ApiVersion(1, 0); 
     options.AssumeDefaultVersionWhenUnspecified = true;
     options.ReportApiVersions = true;
 
@@ -59,12 +65,21 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 builder.Services.ConfigureOptions<ConfigureSwaggerOptions>();
 
+// Register Repositories
 builder.Services.AddScoped<ICargoRepository, SQLCargoRepository>();
 builder.Services.AddScoped<ICrewMemberRepository, SQLCrewMemberRepository>();
 builder.Services.AddScoped<IPortRepository, SQLPortRepository>();
 builder.Services.AddScoped<IShipRepository, SQLShipRepository>();
 builder.Services.AddScoped<IShipCrewAssignmentRepository, SQLShipCrewAssignmentRepository>();
 builder.Services.AddScoped<IShipVisitRepository, SQLShipVisitRepository>();
+
+// Register Services
+builder.Services.AddScoped<ICargoService, CargoService>();
+builder.Services.AddScoped<ICrewMemberService, CrewMemberService>();
+builder.Services.AddScoped<IPortService, PortService>();
+builder.Services.AddScoped<IShipService, ShipService>();
+builder.Services.AddScoped<IShipCrewAssignmentService, ShipCrewAssignmentService>();
+builder.Services.AddScoped<IShipVisitService, ShipVisitService>();
 
 var app = builder.Build();
 

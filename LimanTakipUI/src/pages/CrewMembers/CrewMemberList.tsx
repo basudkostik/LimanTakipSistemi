@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Edit, Trash2, Search, User, Mail, Phone, Briefcase, Globe } from 'lucide-react';
+import { Plus, Edit, Trash2, Search, User, Mail, Phone, Briefcase } from 'lucide-react';
 import { crewMemberAPI } from '../../services/api';
 import { CrewMember, AddCrewMemberRequest, UpdateCrewMemberRequest } from '../../types';
 import MainLayout from '../../components/Layout/MainLayout';
@@ -12,75 +12,72 @@ const CrewMemberList: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [showForm, setShowForm] = useState(false);
   const [editingCrewMember, setEditingCrewMember] = useState<CrewMember | null>(null);
-  
-  // Filtreler
-  const [filterName, setFilterName] = useState('');
-  const [filterPosition, setFilterPosition] = useState('');
-  const [filterNationality, setFilterNationality] = useState('');
 
-  const params = {
-    name: filterName || undefined,
-    position: filterPosition || undefined,
-    nationality: filterNationality || undefined,
-    pageNumber: 1,
-    pageSize: 100
-  };
+  const [filterName, setFilterName] = useState('');
+  const [filterRole, setFilterRole] = useState('');
 
   useEffect(() => {
     loadCrewMembers();
   }, []);
 
   useEffect(() => {
-    loadCrewMembers();
-  }, [filterName, filterPosition, filterNationality]);
+    filterCrewMembers();
+  }, [filterName, filterRole, allCrewMembers]);
 
   const loadCrewMembers = async () => {
     try {
       setLoading(true);
       setError(null);
 
-      const response = await crewMemberAPI.getAll(params);
-      const response_all = await crewMemberAPI.getAll();
-      
-      const filteredCrewMembers = response.data || [];
+      const response_all = await crewMemberAPI.getAll(); 
       const allCrewMembersData = response_all.data || [];
-
-      console.log('👥 Filtered CrewMembers loaded:', filteredCrewMembers);
-      console.log('📊 All CrewMembers loaded:', allCrewMembersData);
-
+      console.log('🚢 All members loaded:', allCrewMembersData);
       setAllCrewMembers(allCrewMembersData);
-      setCrewMembers(filteredCrewMembers);
-
+      setLoading(false);
     } catch (error) {
       console.error('Error loading data:', error);
       setError('Veriler yüklenirken hata oluştu');
-    } finally {
       setLoading(false);
     }
   };
 
+  const filterCrewMembers = () => {
+    const search = filterName.toLowerCase();
+
+    let filtered = allCrewMembers;
+
+    if (search) {
+      filtered = filtered.filter(member =>
+        member.firstName.toLowerCase().includes(search) ||
+        member.lastName.toLowerCase().includes(search)
+      );
+    }
+
+    if (filterRole) {
+      filtered = filtered.filter(member => member.role === filterRole);
+    }
+
+    setCrewMembers(filtered);
+  };
+
   const handleCreate = async (data: AddCrewMemberRequest) => {
     try {
-      console.log('➕ Creating crew member with data:', data);
       await crewMemberAPI.create(data);
-      console.log('✅ Crew member created successfully');
       setShowForm(false);
-      loadCrewMembers();
+      await loadCrewMembers();
     } catch (error) {
-      console.error('❌ Error creating crew member:', error);
+      console.error('Error creating crew member:', error);
       throw error;
     }
   };
 
   const handleUpdate = async (id: number, data: UpdateCrewMemberRequest) => {
     try {
-      console.log('✏️ Updating crew member with ID:', id, 'and data:', data);
       await crewMemberAPI.update(id, data);
-      console.log('✅ Crew member updated successfully');
       setEditingCrewMember(null);
-      loadCrewMembers();
+      await loadCrewMembers();
     } catch (error) {
-      console.error('❌ Error updating crew member:', error);
+      console.error('Error updating crew member:', error);
       throw error;
     }
   };
@@ -88,26 +85,22 @@ const CrewMemberList: React.FC = () => {
   const handleDelete = async (id: number) => {
     if (window.confirm('Bu mürettebat kaydını silmek istediğinizden emin misiniz?')) {
       try {
-        console.log('🗑️ Deleting crew member with ID:', id);
         await crewMemberAPI.delete(id);
-        console.log('✅ Crew member deleted successfully');
-        loadCrewMembers();
+        await loadCrewMembers();
       } catch (error) {
-        console.error('❌ Error deleting crew member:', error);
+        console.error('Error deleting crew member:', error);
       }
     }
   };
 
-  // İstatistikler
   const totalCrewMembers = allCrewMembers.length;
-  const uniquePositions = [...new Set(allCrewMembers.map(crew => crew.position).filter(Boolean))];
-  const uniqueNationalities = [...new Set(allCrewMembers.map(crew => crew.nationality).filter(Boolean))];
+  const uniquePositions = [...new Set(allCrewMembers.map(crew => crew.role).filter(Boolean))];
 
   const CrewMemberFilters = (
     <div className="space-y-4">
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-2">
-          İsim Arama
+          İsim veya Soyisim Arama
         </label>
         <div className="relative">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
@@ -126,8 +119,8 @@ const CrewMemberList: React.FC = () => {
           Pozisyon
         </label>
         <select
-          value={filterPosition}
-          onChange={(e) => setFilterPosition(e.target.value)}
+          value={filterRole}
+          onChange={(e) => setFilterRole(e.target.value)}
           className="input-field"
         >
           <option key="all-positions" value="">Tüm Pozisyonlar</option>
@@ -137,29 +130,11 @@ const CrewMemberList: React.FC = () => {
         </select>
       </div>
 
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">
-          Uyrukluk
-        </label>
-        <select
-          value={filterNationality}
-          onChange={(e) => setFilterNationality(e.target.value)}
-          className="input-field"
-        >
-          <option key="all-nationalities" value="">Tüm Uyruklar</option>
-          {uniqueNationalities.map(nationality => (
-            <option key={`nationality-${nationality}`} value={nationality}>{nationality}</option>
-          ))}
-        </select>
-      </div>
-
-      {/* Filtreleri Temizle Butonu */}
       <div className="pt-2">
         <button
           onClick={() => {
             setFilterName('');
-            setFilterPosition('');
-            setFilterNationality('');
+            setFilterRole('');
           }}
           className="w-full btn-secondary text-sm py-2"
         >
@@ -189,7 +164,7 @@ const CrewMemberList: React.FC = () => {
           <div className="text-center">
             <div className="text-red-600 text-xl mb-4">⚠️</div>
             <p className="text-red-600 mb-4">{error}</p>
-            <button 
+            <button
               onClick={loadCrewMembers}
               className="btn-primary"
             >
@@ -204,7 +179,6 @@ const CrewMemberList: React.FC = () => {
   return (
     <MainLayout sidebarContent={CrewMemberFilters}>
       <div className="space-y-6">
-        {/* Header */}
         <div className="flex justify-between items-center">
           <div>
             <h1 className="text-2xl font-bold text-gray-900">Mürettebat Kayıtları</h1>
@@ -219,7 +193,6 @@ const CrewMemberList: React.FC = () => {
           </button>
         </div>
 
-        {/* Stats */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <div className="card">
             <div className="text-sm font-medium text-gray-500">Toplam Mürettebat</div>
@@ -230,16 +203,11 @@ const CrewMemberList: React.FC = () => {
             <div className="text-2xl font-bold text-blue-600">{uniquePositions.length}</div>
           </div>
           <div className="card">
-            <div className="text-sm font-medium text-green-600">Farklı Uyrukluk</div>
-            <div className="text-2xl font-bold text-green-600">{uniqueNationalities.length}</div>
-          </div>
-          <div className="card">
             <div className="text-sm font-medium text-gray-500">Filtrelenen</div>
             <div className="text-2xl font-bold text-gray-900">{crewMembers.length}</div>
           </div>
         </div>
 
-        {/* CrewMembers Table */}
         <div className="card">
           <div className="overflow-x-auto">
             <table className="min-w-full divide-y divide-gray-200">
@@ -247,7 +215,6 @@ const CrewMemberList: React.FC = () => {
                 <tr>
                   <th className="table-header">İsim</th>
                   <th className="table-header">Pozisyon</th>
-                  <th className="table-header">Uyrukluk</th>
                   <th className="table-header">İletişim</th>
                   <th className="table-header">İşlemler</th>
                 </tr>
@@ -256,33 +223,27 @@ const CrewMemberList: React.FC = () => {
                 {crewMembers.length === 0 ? (
                   <tr>
                     <td colSpan={5} className="table-cell text-center text-gray-500 py-8">
-                      {filterName || filterPosition || filterNationality
+                      {(filterName || filterRole)
                         ? 'Arama kriterlerine uygun mürettebat bulunamadı'
                         : 'Henüz mürettebat kaydı eklenmemiş'}
                     </td>
                   </tr>
                 ) : (
                   crewMembers.map((crewMember, index) => (
-                    <tr key={crewMember.crewMemberId || `crewmember-${index}`} className="hover:bg-gray-50">
+                    <tr key={crewMember.crewId || `crewmember-${index}`} className="hover:bg-gray-50">
                       <td className="table-cell">
                         <div className="flex items-center space-x-2">
                           <User className="h-4 w-4 text-blue-600" />
                           <div>
-                            <div className="font-medium">{crewMember.name}</div>
-                            <div className="text-sm text-gray-500">ID: {crewMember.crewMemberId}</div>
+                            <div className="font-medium">{crewMember.firstName + " " + crewMember.lastName}</div>
+                            <div className="text-sm text-gray-500">ID: {crewMember.crewId}</div>
                           </div>
                         </div>
                       </td>
                       <td className="table-cell">
                         <div className="flex items-center space-x-2">
                           <Briefcase className="h-4 w-4 text-purple-600" />
-                          <span>{crewMember.position}</span>
-                        </div>
-                      </td>
-                      <td className="table-cell">
-                        <div className="flex items-center space-x-2">
-                          <Globe className="h-4 w-4 text-green-600" />
-                          <span>{crewMember.nationality}</span>
+                          <span>{crewMember.role}</span>
                         </div>
                       </td>
                       <td className="table-cell">
@@ -293,7 +254,7 @@ const CrewMemberList: React.FC = () => {
                           </div>
                           <div className="flex items-center space-x-1 text-sm">
                             <Phone className="h-3 w-3 text-gray-400" />
-                            <span className="text-gray-600">{crewMember.phone}</span>
+                            <span className="text-gray-600">{crewMember.phoneNumber}</span>
                           </div>
                         </div>
                       </td>
@@ -307,7 +268,7 @@ const CrewMemberList: React.FC = () => {
                             <Edit className="h-4 w-4" />
                           </button>
                           <button
-                            onClick={() => handleDelete(crewMember.crewMemberId)}
+                            onClick={() => handleDelete(crewMember.crewId)}
                             className="text-red-600 hover:text-red-800 p-1"
                             title="Sil"
                           >
@@ -324,13 +285,12 @@ const CrewMemberList: React.FC = () => {
         </div>
       </div>
 
-      {/* Create/Edit Form Modal */}
       {(showForm || editingCrewMember) && (
         <CrewMemberForm
           crewMember={editingCrewMember}
           onSubmit={async (data) => {
             if (editingCrewMember) {
-              await handleUpdate(editingCrewMember.crewMemberId, data);
+              await handleUpdate(editingCrewMember.crewId, data);
             } else {
               await handleCreate(data);
             }
@@ -345,4 +305,4 @@ const CrewMemberList: React.FC = () => {
   );
 };
 
-export default CrewMemberList; 
+export default CrewMemberList;

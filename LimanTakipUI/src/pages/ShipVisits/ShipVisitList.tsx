@@ -27,11 +27,11 @@ const ShipVisitList: React.FC = () => {
     loadShipsAndPorts();
   }, []);
 
-  // Sistem saatini her saniye güncelle
+  
   useEffect(() => {
     const timer = setInterval(() => {
       setCurrentTime(new Date());
-    }, 1000);
+    }, 3600000);
 
     return () => clearInterval(timer);
   }, []);

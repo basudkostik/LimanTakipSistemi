@@ -42,6 +42,10 @@ const ShipForm: React.FC<ShipFormProps> = ({ ship, onSubmit, onCancel }) => {
       newErrors.imo = 'IMO numarası zorunludur';
     } else if (formData.imo.length < 7) {
       newErrors.imo = 'IMO numarası en az 7 karakter olmalıdır';
+    } else if (formData.imo.length > 7){
+      newErrors.imo = "IMO numarası tam olarak 7 karakter olmalıdır"; 
+    }  else if(!/^\d{7}$/.test(formData.imo)){
+      newErrors.imo = "IMO numarası sadece rakamlardan oluşmalıdır";
     }
 
     if (!formData.type.trim()) {
@@ -72,21 +76,19 @@ const handleSubmit = async (e: React.FormEvent) => {
       };
       await onSubmit(formDataWithIMO);
     } catch (error: any) {
-      if (error.response?.data?.errors) {
+      if (error.response?.data?.message) {
+        // service layer
+        setErrors(prev => ({
+          ...prev,
+          general: error.response.data.message
+        }));
+      } else if (error.response?.data?.errors) {
+        // Model validation hataları
         const apiErrors = error.response.data.errors;
-        
-        
-        if (apiErrors.imo && apiErrors.imo.includes('unique')) {
-          setErrors(prev => ({
-            ...prev,
-            imo: 'IMO numarası benzersiz olmalı'
-          }));
-        } else {
-          setErrors(prev => ({
-            ...prev,
-            ...apiErrors
-          }));
-        }
+        setErrors(prev => ({
+          ...prev,
+          ...apiErrors
+        }));
       } else if (error.message) {
         // Genel hata mesajı
         setErrors(prev => ({
@@ -105,7 +107,7 @@ const handleSubmit = async (e: React.FormEvent) => {
       [name]: name === 'yearBuilt' ? parseInt(value) || 0 : value,
     }));
     
-    // Clear error when user starts typing
+    
     if (errors[name]) {
       setErrors(prev => ({ ...prev, [name]: '' }));
     }
@@ -271,4 +273,4 @@ const handleSubmit = async (e: React.FormEvent) => {
   );
 };
 
-export default ShipForm; 
+export default ShipForm;

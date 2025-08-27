@@ -86,7 +86,7 @@ const ShipVisitForm: React.FC<ShipVisitFormProps> = ({
 
     if (validateForm()) {
       try {
-        // Tarihleri ISO string formatına çevir
+        
         const formDataWithDates = {
           ...formData,
           arrivalDate: new Date(formData.arrivalDate).toISOString(),
@@ -95,13 +95,22 @@ const ShipVisitForm: React.FC<ShipVisitFormProps> = ({
         
         await onSubmit(formDataWithDates);
       } catch (error: any) {
-        if (error.response?.data?.errors) {
+        
+        if (error.response?.data?.message) {
+          //  service layer hataları
+          setErrors(prev => ({
+            ...prev,
+            general: error.response.data.message
+          }));
+        } else if (error.response?.data?.errors) {
+          // Model validation hataları
           const apiErrors = error.response.data.errors;
           setErrors(prev => ({
             ...prev,
             ...apiErrors
           }));
         } else if (error.message) {
+          // Genel hata mesajı 
           setErrors(prev => ({
             ...prev,
             general: error.message
